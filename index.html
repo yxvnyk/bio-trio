@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АМР в водах Одессы и Черного моря: Интерактивный отчет</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #fcfaf7; /* Теплый нейтральный фон */
+            color: #332d29;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 350px;
+            max-height: 400px;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(231, 226, 217, 0.5);
+            transition: transform 0.2s ease;
+        }
+
+        .nav-link {
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .nav-link.active {
+            border-bottom: 2px solid #8b7355;
+            color: #8b7355;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #4a4a4a 0%, #8b7355 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .leaflet-pane { z-index: 10 !important; }
+        .leaflet-top, .leaflet-bottom { z-index: 40 !important; }
+    </style>
+</head>
+<body class="antialiased">
+
+<!-- Chosen Palette: Warm Harmony (Stone-50, Sage, Earth-Brown accents) -->
+<!-- Application Structure Plan: 
+    1. Introduction & Dashboard: High-level metrics and current status.
+    2. Spatial Dynamics: Interactive table and map-like station cards to explore locations.
+    3. The Kakhovka Impact: Comparative analysis of pre/post disaster levels (the "Shifting Baseline").
+    4. Microbial Landscape: Donut charts for taxonomic shifts (Pathogens vs Destructors).
+    5. Genetic Resistance: Deep dive into specific ARGs (vanB, mcr-1) using Bar charts.
+    6. Vectors & Future: Information on birds, ballast water, and the potential for new antibiotics.
+    Rationale: This flow guides the user from general geography to specific ecological shocks, then into microscopic genetic data, concluding with broad environmental vectors and hope (bioprospecting).
+-->
+<!-- Visualization & Content Choices: 
+    - Locations -> Station Cards -> Interactive Exploration -> Grid layout for easy scan.
+    - Kakhovka Impact -> Comparative Bar Chart -> Goal: Show the massive leap in ARG counts -> Chart.js.
+    - Microbial Profile -> Donut Chart -> Goal: Show dominance of specific classes like Gammaproteobacteria -> Chart.js.
+    - Genetic Markers -> Horizontal Bar Chart -> Goal: Contrast different gene frequencies -> Chart.js.
+    - Bioprospecting -> Highlight Cards -> Goal: Show positive scientific discoveries.
+    CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. All visuals via Canvas or styled HTML/CSS.
+-->
+[6/24/2026 6:20 PM] Любаня: <nav class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <span class="text-lg font-bold gradient-text">BlackSea AMR Monitor</span>
+            <div class="hidden md:flex space-x-8">
+                <button onclick="scrollToSection('geography')" class="nav-link text-sm font-medium">География</button>
+                <button onclick="scrollToSection('kakhovka')" class="nav-link text-sm font-medium">Катастрофа ГЭС</button>
+                <button onclick="scrollToSection('microbiome')" class="nav-link text-sm font-medium">Микробиом</button>
+                <button onclick="scrollToSection('genetics')" class="nav-link text-sm font-medium">Гены (ARGs)</button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<header class="py-16 px-4 text-center">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 text-stone-800 leading-tight">Анализ антимикробной резистентности в водах Одессы</h1>
+        <p class="text-xl text-stone-600 font-light italic">Исследование пространственной динамики и последствий экологических катастроф в рамках парадигмы «Единое здоровье».</p>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 pb-20 space-y-24">
+
+    <!-- Section 1: Introduction Paragraph -->
+    <section class="max-w-3xl mx-auto text-center space-y-6">
+        <p class="text-lg leading-relaxed text-stone-700">
+            Данный раздел представляет собой интерактивный обзор текущей ситуации в Черном море. Морская экосистема региона — это не просто акватория, а активный биореактор, аккумулирующий последствия сельскохозяйственной и урбанистической деятельности всей Европы. Здесь вы найдете ключевые показатели мониторинга, от географических координат станций до критических изменений в микробиоме после разрушения Каховской ГЭС.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8">
+            <div class="p-6 glass-panel rounded-2xl shadow-sm border-l-4 border-amber-500">
+                <div class="text-3xl font-bold text-stone-800 mb-1">mcr-1</div>
+                <div class="text-xs uppercase tracking-wider text-stone-500">Ген «Последней надежды»</div>
+            </div>
+            <div class="p-6 glass-panel rounded-2xl shadow-sm border-l-4 border-blue-500">
+                <div class="text-3xl font-bold text-stone-800 mb-1">35%</div>
+                <div class="text-xs uppercase tracking-wider text-stone-500">Пик цианобактерий</div>
+            </div>
+            <div class="p-6 glass-panel rounded-2xl shadow-sm border-l-4 border-stone-800">
+                <div class="text-3xl font-bold text-stone-800 mb-1">150т</div>
+                <div class="text-xs uppercase tracking-wider text-stone-500">Выброс масел в залив</div>
+            </div>
+        </div>
+    </section>
+[6/24/2026 6:20 PM] Любаня: <!-- Section 2: Geography -->
+    <section id="geography" class="space-y-12">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-stone-800">География мониторинга и станции EMBLAS</h2>
+            <p class="mt-4 text-stone-600 max-w-2xl mx-auto">Исследование охватывает ключевые зоны: от северо-западного шельфа (наиболее загрязненного) до открытых пелагических вод.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div class="space-y-6">
+                <div class="overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
+                    <table class="min-w-full divide-y divide-stone-200">
+                        <thead class="bg-stone-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Локация</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Регион</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Уровень</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stationsTable" class="bg-white divide-y divide-stone-100">
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-8 glass-panel rounded-2xl space-y-6 shadow-sm">
+                    <h3 class="text-xl font-semibold">Пространственный анализ</h3>
+                    <p class="text-stone-700 leading-relaxed">
+                        Северо-западный шельф (район Одессы и устьев рек) выступает основным накопителем («sink») резистентности. Здесь показатели генов <i>blaSHV</i> и <i>blaCMY</i> достоверно выше (p < 0.05), чем в открытом море. Это прямое следствие влияния стоков Дуная, Днепра и Днестра.
+                    </p>
+                    <div class="flex items-center space-x-2 text-amber-700 bg-amber-50 p-4 rounded-lg border border-amber-100">
+                        <span class="text-2xl">⚠️</span>
+                        <span class="text-sm">Концентрация АМР в рекреационных зонах Одессы достигла критических значений в июне 2023 г.</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Контейнер для карты -->
+            <div class="h-full min-h-[500px] w-full rounded-2xl border border-stone-200 shadow-sm overflow-hidden relative z-0" id="amrMap"></div>
+        </div>
+    </section>
+
+    <!-- Section 3: Kakhovka Dam Impact -->
+    <section id="kakhovka" class="space-y-12 bg-stone-100/50 p-8 rounded-3xl">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-stone-800">Последствия разрушения Каховской ГЭС</h2>
+            <p class="mt-4 text-stone-600 max-w-2xl mx-auto">Сравнение уровней ARGs (генов резистентности) до и после залпового сброса вод 6 июня 2023 года.</p>
+        </div>
+[6/24/2026 6:20 PM] Любаня: <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div class="chart-container">
+                <canvas id="kakhovkaChart"></canvas>
+            </div>
+            <div class="space-y-6">
+                <h3 class="text-2xl font-bold text-stone-800">Экологический шок</h3>
+                <p class="text-stone-700">
+                    Разрушение плотины привело к росту абсолютного числа копий генов резистентности в 1.5–2 раза. Эпицентром стал Очаков (Днепровско-Бугский лиман), откуда загрязнение транзитом прошло через Одесский залив.
+                </p>
+                <ul class="space-y-3">
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">●</span>
+                        <span><b>vanA:</b> Рост до 7.7 × 10⁴ копий в эпицентре.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">●</span>
+                        <span><b>tetB:</b> Существенное повышение в транзитной зоне Одессы.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-blue-500 mr-2">●</span>
+                        <span><b>qnrS:</b> Маркер устойчивости к хинолонам, принесенный паводком.</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Microbiome -->
+    <section id="microbiome" class="space-y-12">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-stone-800">Таксономический профиль и патогены</h2>
+            <p class="mt-4 text-stone-600 max-w-2xl mx-auto">Анализ состава бактериальных сообществ в пострадавших зонах (на примере Очаковской зоны).</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="p-6 glass-panel rounded-2xl">
+                <h4 class="text-lg font-bold mb-4 text-center">Микробиом зоны Очаков (Пост-ГЭС)</h4>
+                <div class="chart-container h-80">
+                    <canvas id="microbiomeChart"></canvas>
+                </div>
+            </div>
+            <div class="flex flex-col justify-center space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+                    <h4 class="font-bold text-stone-800 mb-2 underline decoration-amber-500">Группа ESKAPE и деструкторы</h4>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        До 42.5% сообщества составили толерантные к загрязнению таксоны. Род <b>Pseudomonas</b> (до 24%) и <b>Acinetobacter</b> (11%) доминировали в эстуарной зоне, используя нефтепродукты как субстрат.
+                    </p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl border border-stone-100 shadow-sm">
+                    <h4 class="font-bold text-stone-800 mb-2 underline decoration-blue-500">Цианобактериальный взрыв</h4>
+                    <p class="text-sm text-stone-600 leading-relaxed">
+                        В Одесском заливе доля <i>Cyanobacteria</i> (Planktothrix, Microcystis) подскочила с фоновых 3% до <b>35%</b>, провоцируя токсичное цветение и гипоксию.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Genetics ARGs -->
+    <section id="genetics" class="space-y-12 bg-stone-800 text-stone-100 p-10 rounded-3xl shadow-2xl">
+        <div class="text-center">
+            <h2 class="text-3xl font-bold">Генетические маркеры (ARGs)</h2>
+            <p class="mt-4 text-stone-400 max-w-2xl mx-auto">Распределение относительных уровней генов резистентности в акватории Черного моря.</p>
+        </div>
+[6/24/2026 6:20 PM] Любаня: <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center">
+            <div class="lg:col-span-2 chart-container">
+                <canvas id="argsChart"></canvas>
+            </div>
+            <div class="space-y-6">
+                <div class="p-4 bg-stone-700/50 rounded-xl border border-stone-600">
+                    <span class="block text-amber-400 font-bold">Критический риск: mcr-1</span>
+                    <p class="text-xs mt-1 text-stone-300">Обнаружение плазмидного гена устойчивости к колистину («препарату последней надежды») свидетельствует о высоком уровне генетического загрязнения.</p>
+                </div>
+                <div class="p-4 bg-stone-700/50 rounded-xl border border-stone-600">
+                    <span class="block text-blue-400 font-bold">Доминант: vanB</span>
+                    <p class="text-xs mt-1 text-stone-300">Ген устойчивости к ванкомицину является самым частотным маркером в бассейне северо-западного шельфа.</p>
+                </div>
+                <p class="text-sm text-stone-400 italic">Данные нормализованы по числу копий 16S рРНК для корректного сравнения биомассы.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Bioprospecting (The Hope) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-12">
+        <div class="space-y-6">
+            <h2 class="text-3xl font-bold text-stone-800">Парадокс: Биоразведка и новые надежды</h2>
+            <p class="text-stone-700 leading-relaxed">
+                Несмотря на антропогенную нагрузку, уникальная микрофлора Черного моря остается резервуаром для поиска новых антибиотиков. Учеными Одесского национального университета им. Мечникова (ОНУ) были выделены уникальные штаммы:
+            </p>
+            <div class="space-y-4">
+                <div class="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-sm border border-stone-100">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">1</div>
+                    <div>
+                        <p class="font-bold">Streptomyces sp. ONU 561</p>
+                        <p class="text-xs text-stone-500">Подавляет рост S. aureus и K. pneumoniae.</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4 bg-white p-4 rounded-xl shadow-sm border border-stone-100">
+                    <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">2</div>
+                    <div>
+                        <p class="font-bold">Bacillus velezensis ONU 553</p>
+                        <p class="text-xs text-stone-500">Глубоководный штамм с потенциалом синтеза 6 антибиотиков.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="relative group">
+            <div class="absolute inset-0 bg-stone-300 rounded-2xl transform rotate-2 group-hover:rotate-1 transition-transform"></div>
+            <div class="relative bg-white p-8 rounded-2xl border border-stone-200 shadow-lg space-y-4">
+                <h4 class="text-xl font-bold text-stone-800 uppercase tracking-tighter">Метаболомика мидий</h4>
+                <p class="text-sm text-stone-600">
+                    В экзометаболоме штаммов, выделенных из раковин черноморских мидий (Myt7b), обнаружено 53 соединения, включая энтероцин и меделамин А. Эти вещества вызывают гибель до 90% злокачественных клеток человека (Hep-2).
+                </p>
+                <div class="pt-4 border-t border-stone-100 flex justify-between text-xs font-mono text-stone-400">
+                    <span>ID: ONU_STREP_BLACKSEA</span>
+                    <span>GC: 71.59%</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+[6/24/2026 6:20 PM] Любаня: <footer class="bg-stone-900 text-stone-500 py-12 px-4 border-t border-stone-800">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="text-sm">
+            © 2024 Интерактивный отчет на основе данных EU4EMBLAS и ОНУ им. Мечникова.
+        </div>
+        <div class="flex space-x-6 text-xs uppercase tracking-widest">
+            <span>One Health</span>
+            <span>AMR Surveillance</span>
+            <span>Black Sea Ecology</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+    const stations = [
+        { id: "NK1", name: "Очаков (Эпицентр)", region: "Днепровско-Бугский лиман", role: "Критический риск", lat: 46.6122, lng: 31.5391, color: "#ef4444", radius: 15 },
+        { id: "NK3", name: "Одесский залив", region: "Северо-западный шельф", role: "Аккумуляция", lat: 46.4900, lng: 30.7700, color: "#f97316", radius: 12 },
+        { id: "NK5", name: "Устье Дуная", region: "Речной сток", role: "Транзит", lat: 45.4124, lng: 29.8021, color: "#eab308", radius: 10 },
+        { id: "NK6", name: "Констанца", region: "Морская зона", role: "Фоновая зона", lat: 44.1792, lng: 28.6499, color: "#22c55e", radius: 6 }
+    ];
+
+    // Initialize Station Table
+    const tableBody = document.getElementById('stationsTable');
+    stations.forEach(s => {
+        // Динамическое определение цвета бейджа в таблице
+        const roleColorClass = s.color === "#ef4444" ? "bg-red-100 text-red-800" : 
+                               s.color === "#f97316" ? "bg-orange-100 text-orange-800" :
+                               s.color === "#eab308" ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
+                               
+        const row = `<tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-stone-900">${s.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-stone-500">${s.region}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 py-1 ${roleColorClass} rounded text-xs font-semibold">${s.role}</span></td>
+        </tr>`;
+        tableBody.innerHTML += row;
+    });
+
+    const map = L.map('amrMap').setView([45.8, 30.5], 7); // Центрируем между Одессой и Румынией
+    
+    // Добавляем светлую базовую карту (CartoDB Light) для соответствия стилю сайта
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    }).addTo(map);
+
+    // Добавляем "горячие точки" на карту
+    stations.forEach(s => {
+        L.circleMarker([s.lat, s.lng], {
+            radius: s.radius,
+            fillColor: s.color,
+            color: s.color,
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.6
+        })
+        .bindPopup(`<b>${s.name}</b><br><span class="text-sm text-stone-600">${s.region}</span><br><br><span class="font-bold py-1 text-xs uppercase" style="color:${s.color}">${s.role}</span>`)
+        .addTo(map);
+    });
+
+    // Navigation scroll
+    function scrollToSection(id) {
+        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+    new Chart(document.getElementById('kakhovkaChart'), {
+        type: 'bar',
+        data: {
+            labels: ['vanA (Устойчивость к ванкомицину)', 'tetB (Устойчивость к тетрациклину)', 'qnrS (Устойчивость к хинолонам)'],
+            datasets: [
+                {
+                    label: 'Эпицентр (Очаков)',
+                    data: [77000, 1100, 2100],
+                    backgroundColor: '#8b7355',
+                },
+                {
+                    label: 'Фоновые воды (Unaffected)',
+                    data: [39000, 790, 1100],
+                    backgroundColor: '#d6d3d1',
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 12, font: { family: 'Inter' } } },
+                title: { display: true, text: 'Абсолютное число копий генов (qPCR)', font: { size: 16 } }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { color: '#f3f4f6' } }
+            }
+        }
+    });
+
+    // Chart.js - Microbiome Donut
+    new Chart(document.getElementById('microbiomeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Gammaproteobacteria', 'Campylobacteria', 'Pseudarcobacter', 'Acinetobacter', 'Другие'],
+            datasets: [{
+                data: [62, 21, 34, 11, 15],
+                backgroundColor: ['#292524', '#57534e', '#78716c', '#a8a29e', '#e7e5e4'],
+                borderWidth: 0,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } }
+            }
+        }
+    });
+
+    // Chart.js - ARGs Horizontal Bar
+    new Chart(document.getElementById('argsChart'), {
+        type: 'bar',
+        indexAxis: 'y',
+        data: {
+            labels: ['vanB', 'mcr-1 (Колистин!)', 'blaSHV', 'blaCMY', 'ermB', 'vanA'],
+            datasets: [{
+                label: 'Нормализованные значения (16S рРНК)',
+                data: [0.2, 0.05, 0.04, 0.01, 0.001, 0.00001],
+                backgroundColor: (context) => {
+                    const val = context.raw;
+                    return val > 0.04 ? '#f59e0b' : '#3b82f6';
+                },
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: 'Относительное обилие генов в акватории', color: '#e7e5e4' }
+            },
+            scales: {
+                x: { 
+                    type: 'logarithmic',
+                    grid: { color: '#444' },
+                    ticks: { color: '#a8a29e' }
+                },
+                y: {
+                    grid: { display: false },
+                    ticks: { color: '#e7e5e4' }
+                }
+            }
+        }
+    });
+
+</script>
+</body>
+</html>
